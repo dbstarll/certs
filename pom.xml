@@ -1,0 +1,67 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.github.dbstarll.parent</groupId>
+    <artifactId>base</artifactId>
+    <version>1.2.2</version>
+  </parent>
+  <groupId>io.github.dbstarll.certs</groupId>
+  <artifactId>certs-core</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+
+  <description>certs</description>
+  <url>https://github.com/dbstarll/certs</url>
+
+  <scm>
+    <connection>scm:git:${project.git.git.root}</connection>
+    <developerConnection>scm:git:${project.git.web.root}</developerConnection>
+    <url>${project.git.web.master}</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <properties>
+    <project.git.project>certs</project.git.project>
+    <!-- module version -->
+    <version.utils-lang>1.0.3</version.utils-lang>
+    <version.mongodb>4.3.1</version.mongodb>
+    <version.spring>5.3.9</version.spring>
+    <version.spring-boot>2.5.3</version.spring-boot>
+    <version.spring-cloud>Hoxton.SR12</version.spring-cloud>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Commons Utils -->
+      <dependency>
+        <groupId>io.github.dbstarll.utils</groupId>
+        <artifactId>utils-lang</artifactId>
+        <version>${version.utils-lang}</version>
+      </dependency>
+      <!-- MongoDB -->
+      <dependency>
+        <groupId>org.mongodb</groupId>
+        <artifactId>bson</artifactId>
+        <version>${version.mongodb}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mongodb</groupId>
+        <artifactId>mongodb-driver-sync</artifactId>
+        <version>${version.mongodb}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <profiles>
+    <profile>
+      <id>site-local</id>
+      <distributionManagement>
+        <site>
+          <id>local</id>
+          <url>${project.site.root.project}</url>
+        </site>
+      </distributionManagement>
+    </profile>
+  </profiles>
+</project>
