@@ -1,5 +1,6 @@
 package io.github.dbstarll.certs.utils;
 
+import io.github.dbstarll.certs.model.CertificateSigningRequest;
 import io.github.dbstarll.certs.model.CertificationAuthority;
 import io.github.dbstarll.utils.lang.security.InstanceException;
 import io.github.dbstarll.utils.lang.security.KeyPairGeneratorAlgorithm;
@@ -7,8 +8,6 @@ import io.github.dbstarll.utils.lang.security.SecurityFactory;
 import io.github.dbstarll.utils.lang.security.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.pkcs.Attribute;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.*;
@@ -20,7 +19,6 @@ import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 
 import java.io.IOException;
@@ -82,7 +80,7 @@ public final class CertificationAuthorityUtils {
 //    sed -e "s/\${ca.name}/$CA_NAME/g" $CERTS_CONF_HOME/ca.conf > $CA_HOME/ca.conf
 
         // 构建证书私钥
-        final KeyPair keyPair = genrsa(numbits);
+        final KeyPair keyPair = genKeyPair(KeyPairGeneratorAlgorithm.RSA, numbits);
 
         // 生成证书签发申请
         final X500Name subject;
@@ -92,7 +90,7 @@ public final class CertificationAuthorityUtils {
         } else {
             subject = new X500Name("C=CN,ST=SH,L=SH,O=上海云屹信息技术有限公司,OU=" + caName + ",CN=云屹根证书-" + caName);
         }
-        final PKCS10CertificationRequest csr = gencsr(keyPair, subject);
+        final CertificateSigningRequest csr = genCsr(keyPair, subject);
 
         final X509CertificateHolder crt;
         if (issuer != null) {
@@ -127,42 +125,26 @@ public final class CertificationAuthorityUtils {
         return ca;
     }
 
-    /**
-     * 构建私钥.
-     *
-     * @param keySize the keysize. This is an
-     *                algorithm-specific metric, such as modulus length, specified in
-     *                number of bits.
-     * @return KeyPair
-     */
-    public static KeyPair genrsa(final int keySize)
+    private static KeyPair genKeyPair(final KeyPairGeneratorAlgorithm algorithm, final int keySize)
             throws InstanceException, NoSuchAlgorithmException {
-        return SecurityFactory
-                .builder(KeyPairGeneratorAlgorithm.RSA)
+        return SecurityFactory.builder(algorithm)
                 .keySize(keySize, SecureRandomUtils.get())
                 .build().genKeyPair();
     }
 
-    /**
-     * 构建证书签发申请(Certificate Signing Request).
-     *
-     * @param keyPair key pair (a public key and a private key)
-     * @param subject request subject
-     * @return a PKCS#10 certification request.
-     */
-    public static PKCS10CertificationRequest gencsr(final KeyPair keyPair,
-                                                    final X500Name subject)
+    private static CertificateSigningRequest genCsr(final KeyPair keyPair, final X500Name subject)
             throws OperatorCreationException, IOException {
-        // SAN扩展
+        // SAN(Subject Alternative Name)扩展
         final ExtensionsGenerator extensionsGenerator = new ExtensionsGenerator();
         final GeneralNames generalNames = new GeneralNamesBuilder()
                 .addName(new GeneralName(GeneralName.rfc822Name, "ip=6.6.6.6"))
                 .build();
         extensionsGenerator.addExtension(Extension.subjectAlternativeName, false, generalNames);
+
         // build
-        return new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic())
+        return CertificateSigningRequest.from(new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic())
                 .addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extensionsGenerator.generate())
-                .build(signer(SignatureAlgorithm.SHA256withRSA, keyPair.getPrivate()));
+                .build(signer(SignatureAlgorithm.SHA256withRSA, keyPair.getPrivate())));
     }
 
     /**
@@ -173,7 +155,7 @@ public final class CertificationAuthorityUtils {
      * @return 签发好的证书
      */
     public static X509CertificateHolder gencrt(final CertificationAuthority issuer,
-                                               final PKCS10CertificationRequest csr)
+                                               final CertificateSigningRequest csr)
             throws OperatorCreationException, CertificateException, IOException {
         final BigInteger serial = BigInteger.valueOf(SecureRandomUtils.get().nextLong());
         final Date now = new Date();
@@ -182,14 +164,7 @@ public final class CertificationAuthorityUtils {
                 issuer.getCsr().getSubject(), serial, now, notAfter, csr.getSubject(), csr.getSubjectPublicKeyInfo());
 
         // 添加 SAN 扩展
-        for (Attribute attr : csr.getAttributes(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest)) {
-            for (ASN1Encodable value : attr.getAttributeValues()) {
-                final Extension ext = Extensions.getInstance(value).getExtension(Extension.subjectAlternativeName);
-                if (ext != null) {
-                    certificateBuilder.addExtension(ext);
-                }
-            }
-        }
+        csr.addSANExtension(certificateBuilder);
 
         //添加crl扩展
         final GeneralNames gns = new GeneralNames(uri("http://www.ca.com/crl"));
@@ -205,6 +180,13 @@ public final class CertificationAuthorityUtils {
                         new AccessDescription(AccessDescription.id_ad_ocsp, uri("http://ocsp.com/"))
                 }
         ));
+
+
+//        basicConstraints = critical,CA:TRUE
+//        keyUsage = critical,cRLSign,keyCertSign
+//        subjectKeyIdentifier = hash
+//        authorityKeyIdentifier = keyid:always,issuer
+
 
         return certificateBuilder.build(signer(SignatureAlgorithm.SHA256withRSA, issuer.getKeyPair().getPrivate()));
     }

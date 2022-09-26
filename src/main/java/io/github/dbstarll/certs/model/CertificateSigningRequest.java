@@ -1,6 +1,11 @@
 package io.github.dbstarll.certs.model;
 
 import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.Extensions;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.CertIOException;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.openssl.PEMEncryptor;
 import org.bouncycastle.openssl.PEMException;
 import org.bouncycastle.openssl.PEMParser;
@@ -23,6 +28,21 @@ public final class CertificateSigningRequest {
 
     public X500Name getSubject() {
         return request.getSubject();
+    }
+
+    public SubjectPublicKeyInfo getSubjectPublicKeyInfo() {
+        return request.getSubjectPublicKeyInfo();
+    }
+
+    public X509v3CertificateBuilder addSANExtension(final X509v3CertificateBuilder certificateBuilder) throws CertIOException {
+        final Extensions extensions = request.getRequestedExtensions();
+        if (extensions != null) {
+            final Extension ext = extensions.getExtension(Extension.subjectAlternativeName);
+            if (ext != null) {
+                certificateBuilder.addExtension(ext);
+            }
+        }
+        return certificateBuilder;
     }
 
     public static CertificateSigningRequest from(final PKCS10CertificationRequest request) {

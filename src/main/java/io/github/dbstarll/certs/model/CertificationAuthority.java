@@ -3,7 +3,6 @@ package io.github.dbstarll.certs.model;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.openssl.PEMEncryptor;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
-import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -13,7 +12,7 @@ import java.security.KeyPair;
 public final class CertificationAuthority implements Serializable {
     private final String name;
     private final KeyPair keyPair;
-    private final PKCS10CertificationRequest csr;
+    private final CertificateSigningRequest csr;
     private final X509CertificateHolder crt;
 
     /**
@@ -26,7 +25,7 @@ public final class CertificationAuthority implements Serializable {
      */
     public CertificationAuthority(final String name,
                                   final KeyPair keyPair,
-                                  final PKCS10CertificationRequest csr,
+                                  final CertificateSigningRequest csr,
                                   final X509CertificateHolder crt) {
         this.name = name;
         this.keyPair = keyPair;
@@ -42,7 +41,7 @@ public final class CertificationAuthority implements Serializable {
         return keyPair;
     }
 
-    public PKCS10CertificationRequest getCsr() {
+    public CertificateSigningRequest getCsr() {
         return csr;
     }
 
@@ -71,9 +70,7 @@ public final class CertificationAuthority implements Serializable {
      * @throws IOException io exception
      */
     public void writeCSR(final Writer out, final PEMEncryptor encryptor) throws IOException {
-        try (JcaPEMWriter writer = new JcaPEMWriter(out)) {
-            writer.writeObject(csr, encryptor);
-        }
+        csr.writePEM(out, encryptor);
     }
 
     /**
