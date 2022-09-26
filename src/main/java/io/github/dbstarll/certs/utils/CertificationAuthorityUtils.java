@@ -8,7 +8,6 @@ import io.github.dbstarll.utils.lang.security.SecurityFactory;
 import io.github.dbstarll.utils.lang.security.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.*;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -19,7 +18,6 @@ import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
 import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -90,7 +88,11 @@ public final class CertificationAuthorityUtils {
         } else {
             subject = new X500Name("C=CN,ST=SH,L=SH,O=上海云屹信息技术有限公司,OU=" + caName + ",CN=云屹根证书-" + caName);
         }
-        final CertificateSigningRequest csr = genCsr(keyPair, subject);
+
+//        final GeneralNames sanNames = new GeneralNamesBuilder()
+//                .addName(new GeneralName(GeneralName.rfc822Name, "ip=6.6.6.6"))
+//                .build();
+        final CertificateSigningRequest csr = CertificateSigningRequest.generate(keyPair, subject, null, SignatureAlgorithm.SHA256withRSA);
 
         final X509CertificateHolder crt;
         if (issuer != null) {
@@ -130,21 +132,6 @@ public final class CertificationAuthorityUtils {
         return SecurityFactory.builder(algorithm)
                 .keySize(keySize, SecureRandomUtils.get())
                 .build().genKeyPair();
-    }
-
-    private static CertificateSigningRequest genCsr(final KeyPair keyPair, final X500Name subject)
-            throws OperatorCreationException, IOException {
-        // SAN(Subject Alternative Name)扩展
-        final ExtensionsGenerator extensionsGenerator = new ExtensionsGenerator();
-        final GeneralNames generalNames = new GeneralNamesBuilder()
-                .addName(new GeneralName(GeneralName.rfc822Name, "ip=6.6.6.6"))
-                .build();
-        extensionsGenerator.addExtension(Extension.subjectAlternativeName, false, generalNames);
-
-        // build
-        return CertificateSigningRequest.from(new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic())
-                .addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extensionsGenerator.generate())
-                .build(signer(SignatureAlgorithm.SHA256withRSA, keyPair.getPrivate())));
     }
 
     /**
@@ -208,8 +195,8 @@ public final class CertificationAuthorityUtils {
         return new GeneralName(GeneralName.uniformResourceIdentifier, uri);
     }
 
-    private static ContentSigner signer(final SignatureAlgorithm algorithm,
-                                        final PrivateKey privateKey) throws OperatorCreationException {
+    public static ContentSigner signer(final SignatureAlgorithm algorithm,
+                                       final PrivateKey privateKey) throws OperatorCreationException {
         return new JcaContentSignerBuilder(algorithm.name()).setSecureRandom(SecureRandomUtils.get()).build(privateKey);
     }
 
