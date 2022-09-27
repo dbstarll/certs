@@ -5,7 +5,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class SubjectTest {
+/**
+ * 测试Subject.
+ */
+public class SubjectTest {
     @Test
     void toX500Name() {
         final Subject subject = new Subject();

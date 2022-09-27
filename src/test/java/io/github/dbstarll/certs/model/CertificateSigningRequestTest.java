@@ -9,7 +9,10 @@ import java.io.Reader;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-class CertificateSigningRequestTest {
+/**
+ * 测试CertificateSigningRequest.
+ */
+public class CertificateSigningRequestTest {
     @Test
     void readPEM() throws Exception {
         final CertificateSigningRequest csr;
