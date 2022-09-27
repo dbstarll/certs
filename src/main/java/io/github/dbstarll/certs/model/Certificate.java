@@ -12,6 +12,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.Writer;
 import java.math.BigInteger;
 import java.security.PrivateKey;
@@ -20,7 +21,7 @@ import java.util.Date;
 import static io.github.dbstarll.certs.utils.CertificationAuthorityUtils.signer;
 import static io.github.dbstarll.certs.utils.CertificationAuthorityUtils.uri;
 
-public final class Certificate {
+public final class Certificate implements Serializable {
     private final X509CertificateHolder certificateHolder;
 
     private Certificate(final X509CertificateHolder certificateHolder) {
