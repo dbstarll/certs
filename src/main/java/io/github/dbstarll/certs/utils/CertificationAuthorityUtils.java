@@ -1,5 +1,6 @@
 package io.github.dbstarll.certs.utils;
 
+import io.github.dbstarll.certs.model.Certificate;
 import io.github.dbstarll.certs.model.CertificateSigningRequest;
 import io.github.dbstarll.certs.model.CertificationAuthority;
 import io.github.dbstarll.utils.lang.security.InstanceException;
@@ -7,11 +8,8 @@ import io.github.dbstarll.utils.lang.security.KeyPairGeneratorAlgorithm;
 import io.github.dbstarll.utils.lang.security.SecurityFactory;
 import io.github.dbstarll.utils.lang.security.SignatureAlgorithm;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.*;
-import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMEncryptor;
 import org.bouncycastle.openssl.jcajce.JcePEMEncryptorBuilder;
@@ -22,13 +20,10 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Security;
-import java.security.cert.CertificateException;
-import java.util.Date;
 
 public final class CertificationAuthorityUtils {
     static {
@@ -92,13 +87,14 @@ public final class CertificationAuthorityUtils {
 //        final GeneralNames sanNames = new GeneralNamesBuilder()
 //                .addName(new GeneralName(GeneralName.rfc822Name, "ip=6.6.6.6"))
 //                .build();
-        final CertificateSigningRequest csr = CertificateSigningRequest.generate(keyPair, subject, null, SignatureAlgorithm.SHA256withRSA);
+        final CertificateSigningRequest csr = CertificateSigningRequest.generate(
+                keyPair, subject, null, SignatureAlgorithm.SHA256withRSA);
 
-        final X509CertificateHolder crt;
+        final Certificate crt;
         if (issuer != null) {
             // 签发根证书
 // sed -e "s/\${ca.name}/$PARENT_CA/g;s/\${path.len}/$pathlen/g" $CERTS_CONF_HOME/ext/v3_ca_mid > $CA_HOME/extension
-            crt = gencrt(issuer, csr);
+            crt = Certificate.generate(csr, issuer, SignatureAlgorithm.SHA256withRSA);
 //    openssl x509 -in $CA_HOME/$CA_NAME.crt -out $CA_HOME/$CA_NAME.cer
 //    cat $CA_HOME/$CA_NAME.cer $PARENT_CA_HOME/$PARENT_CA-chain.cer >$CA_HOME/$CA_NAME-chain.cer
 //
@@ -107,7 +103,7 @@ public final class CertificationAuthorityUtils {
         } else {
             // 自行签发根证书
 // sed -e "s/\${ca.name}/$CA_NAME/g" $CERTS_CONF_HOME/ext/v3_ca_root > $CA_HOME/extension
-            crt = gencrt(new CertificationAuthority(caName, keyPair, csr, null), csr);
+            crt = Certificate.generate(csr, subject, keyPair.getPrivate(), SignatureAlgorithm.SHA256withRSA);
 //    openssl x509 -in $CA_HOME/$CA_NAME.crt -out $CA_HOME/$CA_NAME.cer
 //    cat $CA_HOME/$CA_NAME.cer >$CA_HOME/$CA_NAME-chain.cer
         }
@@ -135,50 +131,6 @@ public final class CertificationAuthorityUtils {
     }
 
     /**
-     * 签发证书.
-     *
-     * @param issuer Issuer, The parent certificate.
-     * @param csr    the PKCS#10 certification request.
-     * @return 签发好的证书
-     */
-    public static X509CertificateHolder gencrt(final CertificationAuthority issuer,
-                                               final CertificateSigningRequest csr)
-            throws OperatorCreationException, CertificateException, IOException {
-        final BigInteger serial = BigInteger.valueOf(SecureRandomUtils.get().nextLong());
-        final Date now = new Date();
-        final Date notAfter = DateUtils.addYears(now, 1);
-        final X509v3CertificateBuilder certificateBuilder = new X509v3CertificateBuilder(
-                issuer.getCsr().getSubject(), serial, now, notAfter, csr.getSubject(), csr.getSubjectPublicKeyInfo());
-
-        // 添加 SAN 扩展
-        csr.addSANExtension(certificateBuilder);
-
-        //添加crl扩展
-        final GeneralNames gns = new GeneralNames(uri("http://www.ca.com/crl"));
-        final GeneralNames crlIssuer = new GeneralNames(new GeneralName(issuer.getCsr().getSubject()));
-        certificateBuilder.addExtension(Extension.cRLDistributionPoints, false, new CRLDistPoint(
-                new DistributionPoint[]{new DistributionPoint(new DistributionPointName(gns), null, crlIssuer)}
-        ));
-
-        // 添加aia扩展
-        certificateBuilder.addExtension(Extension.authorityInfoAccess, false, new AuthorityInformationAccess(
-                new AccessDescription[]{
-                        new AccessDescription(AccessDescription.id_ad_caIssuers, uri("http://www.ca.com/root.crt")),
-                        new AccessDescription(AccessDescription.id_ad_ocsp, uri("http://ocsp.com/"))
-                }
-        ));
-
-
-//        basicConstraints = critical,CA:TRUE
-//        keyUsage = critical,cRLSign,keyCertSign
-//        subjectKeyIdentifier = hash
-//        authorityKeyIdentifier = keyid:always,issuer
-
-
-        return certificateBuilder.build(signer(SignatureAlgorithm.SHA256withRSA, issuer.getKeyPair().getPrivate()));
-    }
-
-    /**
      * 构建PEM加密机.
      *
      * @param algorithm 加密算法
@@ -191,12 +143,26 @@ public final class CertificationAuthorityUtils {
                 .build(phrase.toCharArray());
     }
 
-    private static GeneralName uri(final String uri) {
+    /**
+     * 构建一个基于URI的GeneralName.
+     *
+     * @param uri uri
+     * @return 一个基于URI的GeneralName
+     */
+    public static GeneralName uri(final String uri) {
         return new GeneralName(GeneralName.uniformResourceIdentifier, uri);
     }
 
-    public static ContentSigner signer(final SignatureAlgorithm algorithm,
-                                       final PrivateKey privateKey) throws OperatorCreationException {
+    /**
+     * 构建一个ContentSigner.
+     *
+     * @param algorithm  签名算法
+     * @param privateKey 签名私钥
+     * @return ContentSigner
+     * @throws OperatorCreationException OperatorCreationException
+     */
+    public static ContentSigner signer(final SignatureAlgorithm algorithm, final PrivateKey privateKey)
+            throws OperatorCreationException {
         return new JcaContentSignerBuilder(algorithm.name()).setSecureRandom(SecureRandomUtils.get()).build(privateKey);
     }
 

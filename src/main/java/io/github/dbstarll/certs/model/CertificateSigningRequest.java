@@ -1,6 +1,5 @@
 package io.github.dbstarll.certs.model;
 
-import io.github.dbstarll.certs.utils.CertificationAuthorityUtils;
 import io.github.dbstarll.utils.lang.security.SignatureAlgorithm;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -21,26 +20,28 @@ import java.io.Reader;
 import java.io.Writer;
 import java.security.KeyPair;
 
+import static io.github.dbstarll.certs.utils.CertificationAuthorityUtils.signer;
+
 /**
  * 证书签发申请(Certificate Signing Request).
  */
 public final class CertificateSigningRequest {
-    private final PKCS10CertificationRequest request;
+    private final PKCS10CertificationRequest certificationRequest;
 
-    private CertificateSigningRequest(final PKCS10CertificationRequest request) {
-        this.request = request;
+    private CertificateSigningRequest(final PKCS10CertificationRequest certificationRequest) {
+        this.certificationRequest = certificationRequest;
     }
 
-    public X500Name getSubject() {
-        return request.getSubject();
+    X500Name getSubject() {
+        return certificationRequest.getSubject();
     }
 
-    public SubjectPublicKeyInfo getSubjectPublicKeyInfo() {
-        return request.getSubjectPublicKeyInfo();
+    SubjectPublicKeyInfo getSubjectPublicKeyInfo() {
+        return certificationRequest.getSubjectPublicKeyInfo();
     }
 
-    public X509v3CertificateBuilder addSANExtension(final X509v3CertificateBuilder certificateBuilder) throws CertIOException {
-        final Extensions extensions = request.getRequestedExtensions();
+    X509v3CertificateBuilder addSANExtension(final X509v3CertificateBuilder certificateBuilder) throws CertIOException {
+        final Extensions extensions = certificationRequest.getRequestedExtensions();
         if (extensions != null) {
             final Extension ext = extensions.getExtension(Extension.subjectAlternativeName);
             if (ext != null) {
@@ -50,12 +51,26 @@ public final class CertificateSigningRequest {
         return certificateBuilder;
     }
 
+    /**
+     * 写入POM格式的证书签发申请.
+     *
+     * @param out       待写入的writer
+     * @param encryptor 加密机
+     * @throws IOException io exception
+     */
     public void writePEM(final Writer out, final PEMEncryptor encryptor) throws IOException {
         try (JcaPEMWriter writer = new JcaPEMWriter(out)) {
-            writer.writeObject(request, encryptor);
+            writer.writeObject(certificationRequest, encryptor);
         }
     }
 
+    /**
+     * 读取POM格式的证书签发申请.
+     *
+     * @param reader 待读取的reader
+     * @return 证书签发申请
+     * @throws IOException io exception
+     */
     public static CertificateSigningRequest readPEM(final Reader reader) throws IOException {
         try (PEMParser parser = new PEMParser(reader)) {
             final Object obj = parser.readObject();
@@ -69,10 +84,23 @@ public final class CertificateSigningRequest {
         }
     }
 
+    /**
+     * 构建一个证书签发申请.
+     *
+     * @param keyPair            key pair (a public key and a private key)
+     * @param subject            an X500Name containing the subject associated with the request we are building.
+     * @param sanNames           SAN(Subject Alternative Name)
+     * @param signatureAlgorithm 签名算法
+     * @return 证书签发申请
+     * @throws IOException               IOException
+     * @throws OperatorCreationException OperatorCreationException
+     */
     public static CertificateSigningRequest generate(final KeyPair keyPair, final X500Name subject,
-                                                     final GeneralNames sanNames, final SignatureAlgorithm algorithm)
+                                                     final GeneralNames sanNames,
+                                                     final SignatureAlgorithm signatureAlgorithm)
             throws IOException, OperatorCreationException {
-        final PKCS10CertificationRequestBuilder builder = new JcaPKCS10CertificationRequestBuilder(subject, keyPair.getPublic());
+        final PKCS10CertificationRequestBuilder builder = new JcaPKCS10CertificationRequestBuilder(
+                subject, keyPair.getPublic());
 
         if (sanNames != null && sanNames.getNames().length > 0) {
             // SAN(Subject Alternative Name)扩展
@@ -81,6 +109,6 @@ public final class CertificateSigningRequest {
             builder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extensionsGenerator.generate());
         }
 
-        return new CertificateSigningRequest(builder.build(CertificationAuthorityUtils.signer(algorithm, keyPair.getPrivate())));
+        return new CertificateSigningRequest(builder.build(signer(signatureAlgorithm, keyPair.getPrivate())));
     }
 }

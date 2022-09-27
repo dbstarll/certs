@@ -1,6 +1,5 @@
 package io.github.dbstarll.certs.model;
 
-import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.openssl.PEMEncryptor;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 
@@ -13,7 +12,7 @@ public final class CertificationAuthority implements Serializable {
     private final String name;
     private final KeyPair keyPair;
     private final CertificateSigningRequest csr;
-    private final X509CertificateHolder crt;
+    private final Certificate crt;
 
     /**
      * 构建CertificationAuthority对象.
@@ -26,26 +25,26 @@ public final class CertificationAuthority implements Serializable {
     public CertificationAuthority(final String name,
                                   final KeyPair keyPair,
                                   final CertificateSigningRequest csr,
-                                  final X509CertificateHolder crt) {
+                                  final Certificate crt) {
         this.name = name;
         this.keyPair = keyPair;
         this.csr = csr;
         this.crt = crt;
     }
 
-    public String getName() {
+    String getName() {
         return name;
     }
 
-    public KeyPair getKeyPair() {
+    KeyPair getKeyPair() {
         return keyPair;
     }
 
-    public CertificateSigningRequest getCsr() {
+    CertificateSigningRequest getCsr() {
         return csr;
     }
 
-    public X509CertificateHolder getCrt() {
+    Certificate getCrt() {
         return crt;
     }
 
@@ -81,8 +80,6 @@ public final class CertificationAuthority implements Serializable {
      * @throws IOException io exception
      */
     public void writeCER(final Writer out, final PEMEncryptor encryptor) throws IOException {
-        try (JcaPEMWriter writer = new JcaPEMWriter(out)) {
-            writer.writeObject(crt, encryptor);
-        }
+        crt.writePEM(out, encryptor);
     }
 }
