@@ -2,9 +2,13 @@ package io.github.dbstarll.certs.model;
 
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.x500.AttributeTypeAndValue;
+import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 
@@ -12,6 +16,8 @@ import static org.apache.commons.lang3.Validate.matchesPattern;
 import static org.apache.commons.lang3.Validate.notBlank;
 
 public final class Subject implements Serializable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Subject.class);
+
     /**
      * [2.5.4.3](CN)common name(CompanyName or FirstName LastName) - StringType(SIZE(1..64)).
      *
@@ -186,7 +192,7 @@ public final class Subject implements Serializable {
         this.description = description;
     }
 
-    X500Name toX500Name() {
+    public X500Name toX500Name() {
         final X500NameBuilder builder = new X500NameBuilder();
         addRequired(builder, BCStyle.CN, common);
         addOptional(builder, BCStyle.C, countryCode);
@@ -198,6 +204,39 @@ public final class Subject implements Serializable {
         addOptional(builder, BCStyle.T, title);
         addOptional(builder, BCStyle.DESCRIPTION, description);
         return builder.build();
+    }
+
+    public static Subject from(final X500Name x500Name) {
+        final Subject subject = new Subject();
+        for (RDN rdn : x500Name.getRDNs()) {
+            final AttributeTypeAndValue tv = rdn.getFirst();
+            final ASN1ObjectIdentifier type = tv.getType();
+            final String value = tv.getValue().toString();
+            if (BCStyle.CN.equals(type)) {
+                subject.setCommon(value);
+            } else if (BCStyle.SERIALNUMBER.equals(type)) {
+                subject.setSerialNumber(value);
+            } else if (BCStyle.C.equals(type)) {
+                subject.setCountryCode(value);
+            } else if (BCStyle.L.equals(type)) {
+                subject.setLocality(value);
+            } else if (BCStyle.ST.equals(type)) {
+                subject.setState(value);
+            } else if (BCStyle.STREET.equals(type)) {
+                subject.setStreet(value);
+            } else if (BCStyle.O.equals(type)) {
+                subject.setOrganization(value);
+            } else if (BCStyle.OU.equals(type)) {
+                subject.setOrganizationalUnit(value);
+            } else if (BCStyle.T.equals(type)) {
+                subject.setTitle(value);
+            } else if (BCStyle.DESCRIPTION.equals(type)) {
+                subject.setDescription(value);
+            } else {
+                LOGGER.warn("unknown X500Name RDN: {} -> {}", type, value);
+            }
+        }
+        return subject;
     }
 
     private void addRequired(final X500NameBuilder builder, final ASN1ObjectIdentifier oid, final String value) {

@@ -1,5 +1,6 @@
 package io.github.dbstarll.certs.model;
 
+import org.bouncycastle.asn1.x500.X500Name;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -14,6 +15,10 @@ class SubjectTest {
         subject.setLocality("普陀区");
         subject.setOrganization("上海云屹信息技术有限公司");
         subject.setOrganizationalUnit("ROOT");
-        assertEquals("CN=云屹根证书-ROOT,C=CN,L=普陀区,ST=上海市,O=上海云屹信息技术有限公司,OU=ROOT", subject.toX500Name().toString());
+        final X500Name x500Name = subject.toX500Name();
+        assertEquals("CN=云屹根证书-ROOT,C=CN,L=普陀区,ST=上海市,O=上海云屹信息技术有限公司,OU=ROOT", x500Name.toString());
+
+        final Subject second = Subject.from(x500Name);
+        assertEquals("CN=云屹根证书-ROOT,C=CN,L=普陀区,ST=上海市,O=上海云屹信息技术有限公司,OU=ROOT", second.toX500Name().toString());
     }
 }

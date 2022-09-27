@@ -95,12 +95,12 @@ public final class CertificateSigningRequest {
      * @throws IOException               IOException
      * @throws OperatorCreationException OperatorCreationException
      */
-    public static CertificateSigningRequest generate(final KeyPair keyPair, final X500Name subject,
+    public static CertificateSigningRequest generate(final KeyPair keyPair, final Subject subject,
                                                      final GeneralNames sanNames,
                                                      final SignatureAlgorithm signatureAlgorithm)
             throws IOException, OperatorCreationException {
         final PKCS10CertificationRequestBuilder builder = new JcaPKCS10CertificationRequestBuilder(
-                subject, keyPair.getPublic());
+                subject.toX500Name(), keyPair.getPublic());
 
         if (sanNames != null && sanNames.getNames().length > 0) {
             // SAN(Subject Alternative Name)扩展

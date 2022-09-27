@@ -25,6 +25,8 @@
     <project.git.project>certs</project.git.project>
     <!-- module version -->
     <version.utils-lang>1.0.3</version.utils-lang>
+    <version.bouncycastle>1.71.1</version.bouncycastle>
+    <version.logback>1.2.11</version.logback>
   </properties>
 
   <dependencies>
@@ -36,7 +38,12 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk18on</artifactId>
-      <version>1.71.1</version>
+      <version>${version.bouncycastle}</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${version.logback}</version>
     </dependency>
   </dependencies>
 

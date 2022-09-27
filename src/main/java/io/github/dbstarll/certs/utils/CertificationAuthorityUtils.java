@@ -3,6 +3,7 @@ package io.github.dbstarll.certs.utils;
 import io.github.dbstarll.certs.model.Certificate;
 import io.github.dbstarll.certs.model.CertificateSigningRequest;
 import io.github.dbstarll.certs.model.CertificationAuthority;
+import io.github.dbstarll.certs.model.Subject;
 import io.github.dbstarll.utils.lang.security.InstanceException;
 import io.github.dbstarll.utils.lang.security.KeyPairGeneratorAlgorithm;
 import io.github.dbstarll.utils.lang.security.SecurityFactory;
@@ -76,12 +77,12 @@ public final class CertificationAuthorityUtils {
         final KeyPair keyPair = genKeyPair(KeyPairGeneratorAlgorithm.RSA, numbits);
 
         // 生成证书签发申请
-        final X500Name subject;
+        final Subject subject;
         //        new X500NameBuilder().addRDN().build();
         if (issuer != null) {
-            subject = new X500Name("C=CN,ST=SH,L=SH,O=上海云屹信息技术有限公司,OU=" + caName + ",CN=云屹中间证书-" + caName);
+            subject = Subject.from(new X500Name("C=CN,ST=SH,L=SH,O=上海云屹信息技术有限公司,OU=" + caName + ",CN=云屹中间证书-" + caName));
         } else {
-            subject = new X500Name("C=CN,ST=SH,L=SH,O=上海云屹信息技术有限公司,OU=" + caName + ",CN=云屹根证书-" + caName);
+            subject = Subject.from(new X500Name("C=CN,ST=SH,L=SH,O=上海云屹信息技术有限公司,OU=" + caName + ",CN=云屹根证书-" + caName));
         }
 
 //        final GeneralNames sanNames = new GeneralNamesBuilder()
@@ -103,7 +104,7 @@ public final class CertificationAuthorityUtils {
         } else {
             // 自行签发根证书
 // sed -e "s/\${ca.name}/$CA_NAME/g" $CERTS_CONF_HOME/ext/v3_ca_root > $CA_HOME/extension
-            crt = Certificate.generate(csr, subject, keyPair.getPrivate(), SignatureAlgorithm.SHA256withRSA);
+            crt = Certificate.generate(csr, subject.toX500Name(), keyPair.getPrivate(), SignatureAlgorithm.SHA256withRSA);
 //    openssl x509 -in $CA_HOME/$CA_NAME.crt -out $CA_HOME/$CA_NAME.cer
 //    cat $CA_HOME/$CA_NAME.cer >$CA_HOME/$CA_NAME-chain.cer
         }
