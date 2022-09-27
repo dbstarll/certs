@@ -88,10 +88,20 @@ public final class Subject implements Serializable {
      */
     private String description;
 
+    /**
+     * get common name.
+     *
+     * @return common name
+     */
     public String getCommon() {
         return common;
     }
 
+    /**
+     * set common name.
+     *
+     * @param common common name
+     */
     public void setCommon(final String common) {
         if (StringUtils.isNotBlank(common)) {
             matchesPattern(common, "\\S.{0,63}");
@@ -99,10 +109,20 @@ public final class Subject implements Serializable {
         this.common = common;
     }
 
+    /**
+     * get device serial number name.
+     *
+     * @return device serial number name
+     */
     public String getSerialNumber() {
         return serialNumber;
     }
 
+    /**
+     * set device serial number name.
+     *
+     * @param serialNumber device serial number name
+     */
     public void setSerialNumber(final String serialNumber) {
         if (StringUtils.isNotBlank(serialNumber)) {
             matchesPattern(serialNumber, "\\S{1,64}");
@@ -110,10 +130,20 @@ public final class Subject implements Serializable {
         this.serialNumber = serialNumber;
     }
 
+    /**
+     * get country code.
+     *
+     * @return country code
+     */
     public String getCountryCode() {
         return countryCode;
     }
 
+    /**
+     * set country code.
+     *
+     * @param countryCode country code
+     */
     public void setCountryCode(final String countryCode) {
         if (StringUtils.isNotBlank(countryCode)) {
             matchesPattern(countryCode, "[A-Z]{2}");
@@ -121,10 +151,20 @@ public final class Subject implements Serializable {
         this.countryCode = countryCode;
     }
 
+    /**
+     * get locality name(City).
+     *
+     * @return locality name(City)
+     */
     public String getLocality() {
         return locality;
     }
 
+    /**
+     * set locality name(City).
+     *
+     * @param locality locality name(City)
+     */
     public void setLocality(final String locality) {
         if (StringUtils.isNotBlank(locality)) {
             matchesPattern(locality, "\\S.{0,63}");
@@ -132,10 +172,20 @@ public final class Subject implements Serializable {
         this.locality = locality;
     }
 
+    /**
+     * get state name(Province).
+     *
+     * @return state name(Province)
+     */
     public String getState() {
         return state;
     }
 
+    /**
+     * set state name(Province).
+     *
+     * @param state state name(Province)
+     */
     public void setState(final String state) {
         if (StringUtils.isNotBlank(state)) {
             matchesPattern(state, "\\S.{0,63}");
@@ -143,10 +193,20 @@ public final class Subject implements Serializable {
         this.state = state;
     }
 
+    /**
+     * get street.
+     *
+     * @return street
+     */
     public String getStreet() {
         return street;
     }
 
+    /**
+     * set street.
+     *
+     * @param street street
+     */
     public void setStreet(final String street) {
         if (StringUtils.isNotBlank(street)) {
             matchesPattern(street, "\\S.{0,63}");
@@ -154,10 +214,20 @@ public final class Subject implements Serializable {
         this.street = street;
     }
 
+    /**
+     * get organization(Company).
+     *
+     * @return organization(Company)
+     */
     public String getOrganization() {
         return organization;
     }
 
+    /**
+     * set organization(Company).
+     *
+     * @param organization organization(Company)
+     */
     public void setOrganization(final String organization) {
         if (StringUtils.isNotBlank(organization)) {
             matchesPattern(organization, "\\S.{0,63}");
@@ -165,10 +235,20 @@ public final class Subject implements Serializable {
         this.organization = organization;
     }
 
+    /**
+     * get organizational unit name(Department).
+     *
+     * @return organizational unit name(Department)
+     */
     public String getOrganizationalUnit() {
         return organizationalUnit;
     }
 
+    /**
+     * set organizational unit name(Department).
+     *
+     * @param organizationalUnit organizational unit name(Department)
+     */
     public void setOrganizationalUnit(final String organizationalUnit) {
         if (StringUtils.isNotBlank(organizationalUnit)) {
             matchesPattern(organizationalUnit, "\\S.{0,63}");
@@ -176,36 +256,62 @@ public final class Subject implements Serializable {
         this.organizationalUnit = organizationalUnit;
     }
 
+    /**
+     * get Title.
+     *
+     * @return Title
+     */
     public String getTitle() {
         return title;
     }
 
+    /**
+     * set Title.
+     *
+     * @param title Title
+     */
     public void setTitle(final String title) {
         this.title = title;
     }
 
+    /**
+     * get Description.
+     *
+     * @return Description
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * set Description.
+     *
+     * @param description Description
+     */
     public void setDescription(final String description) {
         this.description = description;
     }
 
-    public X500Name toX500Name() {
+    X500Name toX500Name() {
         final X500NameBuilder builder = new X500NameBuilder();
-        addRequired(builder, BCStyle.CN, common);
-        addOptional(builder, BCStyle.C, countryCode);
-        addOptional(builder, BCStyle.L, locality);
-        addOptional(builder, BCStyle.ST, state);
-        addOptional(builder, BCStyle.STREET, street);
-        addRequired(builder, BCStyle.O, organization);
-        addOptional(builder, BCStyle.OU, organizationalUnit);
-        addOptional(builder, BCStyle.T, title);
-        addOptional(builder, BCStyle.DESCRIPTION, description);
+        addRequired(builder, BCStyle.CN, getCommon());
+        addOptional(builder, BCStyle.C, getCountryCode());
+        addOptional(builder, BCStyle.L, getLocality());
+        addOptional(builder, BCStyle.ST, getState());
+        addOptional(builder, BCStyle.STREET, getStreet());
+        addRequired(builder, BCStyle.O, getOrganization());
+        addOptional(builder, BCStyle.OU, getOrganizationalUnit());
+        addOptional(builder, BCStyle.T, getTitle());
+        addOptional(builder, BCStyle.DESCRIPTION, getDescription());
         return builder.build();
     }
 
+    /**
+     * 从X500Name构建Subject.
+     *
+     * @param x500Name x500Name
+     * @return Subject
+     */
     public static Subject from(final X500Name x500Name) {
         final Subject subject = new Subject();
         for (RDN rdn : x500Name.getRDNs()) {
@@ -239,7 +345,7 @@ public final class Subject implements Serializable {
         return subject;
     }
 
-    private void addRequired(final X500NameBuilder builder, final ASN1ObjectIdentifier oid, final String value) {
+    private static void addRequired(final X500NameBuilder builder, final ASN1ObjectIdentifier oid, final String value) {
         builder.addRDN(oid, notBlank(value));
     }
 

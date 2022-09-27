@@ -104,13 +104,13 @@ public final class CertificationAuthorityUtils {
         } else {
             // 自行签发根证书
 // sed -e "s/\${ca.name}/$CA_NAME/g" $CERTS_CONF_HOME/ext/v3_ca_root > $CA_HOME/extension
-            crt = Certificate.generate(csr, subject.toX500Name(), keyPair.getPrivate(), SignatureAlgorithm.SHA256withRSA);
+            crt = Certificate.generate(csr, subject, keyPair.getPrivate(), SignatureAlgorithm.SHA256withRSA);
 //    openssl x509 -in $CA_HOME/$CA_NAME.crt -out $CA_HOME/$CA_NAME.cer
 //    cat $CA_HOME/$CA_NAME.cer >$CA_HOME/$CA_NAME-chain.cer
         }
 //        System.out.println(crt);
 
-        final CertificationAuthority ca = new CertificationAuthority(caName, keyPair, csr, crt);
+        final CertificationAuthority ca = new CertificationAuthority(caName, keyPair, subject, csr, crt);
 
         // $CA_NAME.key
         ca.writeKey(debugWriter(), StringUtils.isBlank(phrase) ? null : encryptor("AES-256-CBC", phrase));

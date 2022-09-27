@@ -11,6 +11,7 @@ import java.security.KeyPair;
 public final class CertificationAuthority implements Serializable {
     private final String name;
     private final KeyPair keyPair;
+    private final Subject subject;
     private final CertificateSigningRequest csr;
     private final Certificate crt;
 
@@ -19,15 +20,18 @@ public final class CertificationAuthority implements Serializable {
      *
      * @param name    name of ca
      * @param keyPair key pair (a public key and a private key)
+     * @param subject subject
      * @param csr     the PKCS#10 certification request.
      * @param crt     the Certificate.
      */
     public CertificationAuthority(final String name,
                                   final KeyPair keyPair,
+                                  final Subject subject,
                                   final CertificateSigningRequest csr,
                                   final Certificate crt) {
         this.name = name;
         this.keyPair = keyPair;
+        this.subject = subject;
         this.csr = csr;
         this.crt = crt;
     }
@@ -38,6 +42,10 @@ public final class CertificationAuthority implements Serializable {
 
     KeyPair getKeyPair() {
         return keyPair;
+    }
+
+    Subject getSubject() {
+        return subject;
     }
 
     CertificateSigningRequest getCsr() {

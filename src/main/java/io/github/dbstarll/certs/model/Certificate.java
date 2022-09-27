@@ -56,7 +56,7 @@ public final class Certificate implements Serializable {
                                        final CertificationAuthority issuer,
                                        final SignatureAlgorithm signatureAlgorithm)
             throws IOException, OperatorCreationException {
-        return generate(csr, issuer.getCsr().getSubject(), issuer.getKeyPair().getPrivate(), signatureAlgorithm);
+        return generate(csr, issuer.getSubject(), issuer.getKeyPair().getPrivate(), signatureAlgorithm);
     }
 
     /**
@@ -71,8 +71,15 @@ public final class Certificate implements Serializable {
      * @throws OperatorCreationException OperatorCreationException
      */
     public static Certificate generate(final CertificateSigningRequest csr,
-                                       final X500Name issuer, final PrivateKey issuerPrivateKey,
+                                       final Subject issuer, final PrivateKey issuerPrivateKey,
                                        final SignatureAlgorithm signatureAlgorithm)
+            throws IOException, OperatorCreationException {
+        return generate(csr, issuer.toX500Name(), issuerPrivateKey, signatureAlgorithm);
+    }
+
+    private static Certificate generate(final CertificateSigningRequest csr,
+                                        final X500Name issuer, final PrivateKey issuerPrivateKey,
+                                        final SignatureAlgorithm signatureAlgorithm)
             throws IOException, OperatorCreationException {
         final BigInteger serial = BigInteger.valueOf(SecureRandomUtils.get().nextLong());
         final Date now = new Date();
